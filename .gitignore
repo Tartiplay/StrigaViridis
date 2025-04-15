@@ -1,3 +1,6 @@
 # Ignore environment
 .venv
 venv/
+
+# Ignore pyxel examples
+pyxel_tests/pyxel_examples/
