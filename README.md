@@ -2,7 +2,7 @@
 
 My code snippets and other tests.
 
-## pyxel_test
+## pyxel_tests
 
 Tests with the [Pyxel](https://github.com/kitao/pyxel) game engine.
 
