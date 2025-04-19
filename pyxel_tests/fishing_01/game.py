@@ -210,7 +210,6 @@ fishing_frame = FishingFrame(0, 0)
 hook = Hook(fishing_frame)
 
 
-
 class App:
     
     def __init__(self):
