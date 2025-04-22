@@ -12,19 +12,22 @@ Y = TILE_SIZE * 4
 
 
 
-# Fishing mini-game patterns (width = TILESIZE * 12)
+# Fishing mini-game patterns (12 slots inside the current frame)
 P_01 = [
-    ['slow', TILE_SIZE],
-    ['medium', TILE_SIZE * 2],
-    ['fast', TILE_SIZE * 6],
-    ['medium', TILE_SIZE * 2],
-    ['slow', TILE_SIZE]
+    ['slow', 1],
+    ['medium', 2],
+    ['fast', 6],
+    ['medium', 2],
+    ['slow', 1]
 ]
 
 
 
 # Store fishing mini-games by difficulty
-P_EASY = [P_01]
+P_EASY = {
+    'speeds': { 'slow': 1, 'medium': 2, 'fast': 3 },
+    'patterns' : [P_01]
+}
 
 
 
@@ -111,14 +114,22 @@ class FishCursor:
 
 
 class Pattern:
-    def __init__(self, frame):
+    def __init__(self, frame, cursor):
         
         # Frame dimensions
         self.frame = frame
         
+        # Related cursor
+        self.cursor = cursor
+        
         # Pattern to use
         self.pattern_difficulty = P_EASY
         self.pattern = 0
+        
+        # Distance bar progress
+        self.distance_max = 100
+        self.distance_current = 0
+        self.distance_speed = 1
     
     
     def pattern_color(self, type):
@@ -132,16 +143,54 @@ class Pattern:
             return 0
     
     
+    def get_distance_speed(self):
+        # Get cursor center position
+        cursor_center = self.cursor.x + (self.cursor.size / 2)
+        
+        # Get cursor speed from pattern
+        pattern = self.pattern_difficulty['patterns'][self.pattern]
+        
+        # Find cursor position
+        xmin = self.frame.xmin
+        
+        for p in pattern:
+            width = p[1] * TILE_SIZE
+            xmax = xmin + width
+            
+            # Is the cursor between xmin and xmax?
+            if cursor_center >= xmin and cursor_center < xmax:
+                speed_smf = p[0]
+                speed = self.pattern_difficulty['speeds'][speed_smf]
+                return speed
+            
+            else:
+                xmin += width
+
+
+
+    def update(self):
+        # Get speed at which we close the distance to the surface
+        self.distance_speed = self.get_distance_speed()
+        
+        # Close distance to the surface
+        self.distance_current += self.distance_speed
+        
+        if self.distance_current >= self.distance_max:
+            # Congrats, it's a win!
+            print("WON")
+
+    
+    
     def draw(self):
         
         # Retrieve pattern to draw
-        pattern = self.pattern_difficulty[self.pattern]
+        pattern = self.pattern_difficulty['patterns'][self.pattern]
         x = self.frame.xmin
         
         # Draw pattern sections
         for p in pattern:
             type = p[0]
-            width = p[1]
+            width = p[1] * TILE_SIZE
             
             pyxel.rect(
                 x = x,
@@ -161,7 +210,7 @@ class FishingMiniGame:
         # Related objects
         self.frame = Frame()
         self.cursor = FishCursor(frame = self.frame)
-        self.pattern = Pattern(frame = self.frame)
+        self.pattern = Pattern(frame = self.frame, cursor = self.cursor)
     
     
     def update(self):
@@ -170,7 +219,7 @@ class FishingMiniGame:
         self.cursor.move()
         
         # Pattern actions
-        # …
+        self.pattern.update()
 
     
     def draw(self):
