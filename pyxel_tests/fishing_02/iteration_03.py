@@ -315,13 +315,16 @@ class App:
         
         # --------- FISHING GAME -----------
         # Hook depth
-        self.depth = 600
+        self.depth = 300
         
         # Add fish to the game
         self.fish = Fish('easy')
         
         # Init fishing mini-game prop
         self.fishing = False
+        
+        # Show mini-game related message
+        self.message = False
         # ----------------------------------
         
         # Run game
@@ -341,13 +344,24 @@ class App:
             
             # Run minigame
             self.fishing.update()
-            # print(self.fishing.status)
             
             # Do something on success
+            if self.fishing.status == FishingStatus.SUCCESS:
+                self.message = "Well done, you caught the fish"
+                self.fishing = False
+                print(self.message)
             
             # Do something on failure
+            elif self.fishing.status == FishingStatus.FAILURE:
+                self.message = "The fish is gone with your bait"
+                self.fishing = False
+                print(self.message)
             
             # Do something on abort fishing
+            elif self.fishing.status == FishingStatus.ABORT:
+                self.message = "You let the fish go with your bait"
+                self.fishing = False
+                print(self.message)
             
 
 
@@ -363,6 +377,21 @@ class App:
                 x = TILE_SIZE * 8,
                 y = TILE_SIZE * 16,
                 s = "Press BACKSPACE to abort fishing",
+                col = 7
+            )
+        
+        elif self.message:
+            pyxel.text(
+                x = TILE_SIZE * 8,
+                y = TILE_SIZE * 15,
+                s = self.message,
+                col = 7
+            )
+            
+            pyxel.text(
+                x = TILE_SIZE * 8,
+                y = TILE_SIZE * 16,
+                s = "Press SPACE to fish again",
                 col = 7
             )
         
