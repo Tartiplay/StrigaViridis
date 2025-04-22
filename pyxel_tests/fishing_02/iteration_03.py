@@ -1,4 +1,5 @@
 import pyxel
+from enum import Enum
 
 
 
@@ -9,6 +10,15 @@ SCREEN_WIDTH = 240
 
 # Module level constants
 Y = TILE_SIZE * 4
+
+
+
+# Fishing status
+class FishingStatus(Enum):
+    ONGOING = 'ongoing'
+    SUCCESS = 'success'
+    FAILURE = 'failure'
+    ABORT = 'abort'
 
 
 
@@ -23,10 +33,12 @@ P_01 = [
 
 
 
-# Store fishing mini-games by difficulty
-P_EASY = {
-    'speeds': { 'slow': 1, 'medium': 2, 'fast': 3 },
-    'patterns' : [P_01]
+# Store fishing mini-game patterns and speeds by difficulty
+PATTERNS = {
+    'easy': {
+        'speeds': { 'slow': 0.5, 'medium': 1, 'fast': 3 },
+        'patterns': [P_01]
+    }
 }
 
 
@@ -114,7 +126,7 @@ class FishCursor:
 
 
 class Pattern:
-    def __init__(self, frame, cursor):
+    def __init__(self, frame, cursor, difficulty):
         
         # Frame dimensions
         self.frame = frame
@@ -123,13 +135,11 @@ class Pattern:
         self.cursor = cursor
         
         # Pattern to use
-        self.pattern_difficulty = P_EASY
+        self.pattern_difficulty = difficulty
         self.pattern = 0
         
-        # Distance bar progress
-        self.distance_max = 100
-        self.distance_current = 0
-        self.distance_speed = 1
+        # Speed
+        self.speed = 1
     
     
     def pattern_color(self, type):
@@ -141,50 +151,42 @@ class Pattern:
             return 11
         else:
             return 0
-    
-    
-    def get_distance_speed(self):
+
+
+    def update(self):
+        # ===== Get speed at which we close the distance to the surface: =====
         # Get cursor center position
         cursor_center = self.cursor.x + (self.cursor.size / 2)
         
         # Get cursor speed from pattern
-        pattern = self.pattern_difficulty['patterns'][self.pattern]
+        pattern = PATTERNS[self.pattern_difficulty]['patterns'][self.pattern]
         
         # Find cursor position
         xmin = self.frame.xmin
         
+        # Speed found?
+        speed_found = False
+        
         for p in pattern:
-            width = p[1] * TILE_SIZE
-            xmax = xmin + width
-            
-            # Is the cursor between xmin and xmax?
-            if cursor_center >= xmin and cursor_center < xmax:
-                speed_smf = p[0]
-                speed = self.pattern_difficulty['speeds'][speed_smf]
-                return speed
-            
-            else:
-                xmin += width
-
-
-
-    def update(self):
-        # Get speed at which we close the distance to the surface
-        self.distance_speed = self.get_distance_speed()
-        
-        # Close distance to the surface
-        self.distance_current += self.distance_speed
-        
-        if self.distance_current >= self.distance_max:
-            # Congrats, it's a win!
-            print("WON")
-
+            if not speed_found:
+                width = p[1] * TILE_SIZE
+                xmax = xmin + width
+                
+                # Is the cursor between xmin and xmax?
+                if cursor_center >= xmin and cursor_center < xmax:
+                    speed_smf = p[0]
+                    speed = PATTERNS[self.pattern_difficulty]['speeds'][speed_smf]
+                    self.speed = speed
+                    speed_found = True
+                
+                else:
+                    xmin += width
     
     
     def draw(self):
         
         # Retrieve pattern to draw
-        pattern = self.pattern_difficulty['patterns'][self.pattern]
+        pattern = PATTERNS[self.pattern_difficulty]['patterns'][self.pattern]
         x = self.frame.xmin
         
         # Draw pattern sections
@@ -205,33 +207,96 @@ class Pattern:
         
         
 class FishingMiniGame:
-    def __init__(self):
-        
+    def __init__(self, distance, difficulty):
+                
         # Related objects
         self.frame = Frame()
         self.cursor = FishCursor(frame = self.frame)
-        self.pattern = Pattern(frame = self.frame, cursor = self.cursor)
+        self.pattern = Pattern(
+            frame = self.frame,
+            cursor = self.cursor,
+            difficulty = difficulty
+            )
+        
+        # Dimensions
+        self.width = self.frame.size
+        
+        # Distance bar progress
+        self.distance_max = distance
+        self.distance_current = 0
+        self.distance_speed = 1
+        
+        # Fishing mini-game events
+        self.status = FishingStatus.ONGOING
     
     
     def update(self):
         
-        # Animate fish
+        # If fishing is ongoing, animate cursor
         self.cursor.move()
         
-        # Pattern actions
+        # Get speed from pattern
         self.pattern.update()
+        
+        # Get current distance cursor speed
+        self.distance_speed = self.pattern.speed
+        # print(f"Speed: {self.pattern.speed} || Speed px: {self.distance_speed}")
+        
+        # Close distance to the surface
+        self.distance_current += self.distance_speed
+        
+        # Handle success and failure
+        if self.status == FishingStatus.ONGOING:
+            if self.distance_current >= self.distance_max: # SUCCESS
+                self.status = FishingStatus.SUCCESS
+                
+            elif self.distance_current < 0: # FAILURE
+                self.status = FishingStatus.FAILURE
+            
+            elif pyxel.btnp(pyxel.KEY_BACKSPACE): # ABORT
+                self.status = FishingStatus.ABORT
 
     
     def draw(self):
                
-        # Draw frame pattern
+        # Draw pattern
         self.pattern.draw()
         
         # Draw frame
         self.frame.draw()
         
-        # Draw fish cursor
+        # If fishing is ongoing, animate cursor
         self.cursor.draw()
+        
+        # Draw distance bar - frame
+        pyxel.rectb(
+            x = self.frame.xmin,
+            y = self.frame.y - 7,
+            w = self.frame.size,
+            h = 4,
+            col = 3
+        )
+        
+        # Draw distance bar - fill
+        current_width = int(self.distance_current * self.width / self.distance_max)
+        if current_width <= self.width:
+            width = current_width
+        else:
+            width = self.width
+        
+        pyxel.rect(
+            x = self.frame.xmin,
+            y = self.frame.y - 7,
+            w = width,
+            h = 4,
+            col = 3
+        )
+
+
+
+class Fish:
+    def __init__(self, difficulty):
+        self.difficulty = difficulty
 
 
 
@@ -245,11 +310,19 @@ class App:
             title = "Fishing 03"
         )
         
-        # Create fishing mini game
-        self.minigame = FishingMiniGame()
-        
         # Load resources
         pyxel.load("resources.pyxres")
+        
+        # --------- FISHING GAME -----------
+        # Hook depth
+        self.depth = 600
+        
+        # Add fish to the game
+        self.fish = Fish('easy')
+        
+        # Init fishing mini-game prop
+        self.fishing = False
+        # ----------------------------------
         
         # Run game
         pyxel.run(self.update, self.draw)
@@ -257,8 +330,25 @@ class App:
     
     def update(self):
         
-        # Run minigame
-        self.minigame.update()
+        # Press SPACE to start fishing
+        if pyxel.btnp(pyxel.KEY_SPACE) and not self.fishing:
+            
+            # Create fishing minigame
+            self.fishing = FishingMiniGame(self.depth, self.fish.difficulty)
+        
+        # If we are fishing, run the mini_game until it returns success or failure
+        if self.fishing:
+            
+            # Run minigame
+            self.fishing.update()
+            # print(self.fishing.status)
+            
+            # Do something on success
+            
+            # Do something on failure
+            
+            # Do something on abort fishing
+            
 
 
     def draw(self):
@@ -266,9 +356,24 @@ class App:
         # Draw game bg
         pyxel.cls(0)
         
-        # Draw minigame
-        self.minigame.draw()
-   
+        # Draw depending on if we are fishing or not
+        if self.fishing:
+            self.fishing.draw()
+            pyxel.text(
+                x = TILE_SIZE * 8,
+                y = TILE_SIZE * 16,
+                s = "Press BACKSPACE to abort fishing",
+                col = 7
+            )
+        
+        else:
+            pyxel.text(
+                x = TILE_SIZE * 8,
+                y = TILE_SIZE * 16,
+                s = "Press SPACE to start fishing",
+                col = 7
+            )
+        
 
 
 App()
