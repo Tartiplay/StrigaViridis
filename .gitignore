@@ -2,5 +2,8 @@
 .venv
 venv/
 
+# Ignore __pycache__
+__pycache__/
+
 # Ignore pyxel examples
 pyxel_tests/pyxel_examples/
