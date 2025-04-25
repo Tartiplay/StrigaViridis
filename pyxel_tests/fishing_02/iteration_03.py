@@ -23,11 +23,80 @@ class FishingStatus(Enum):
 
 
 # Fishing mini-game patterns (12 slots inside the current frame)
-P_01 = [
+### Easy
+E_01 = [
     ['slow', 1],
     ['medium', 2],
     ['fast', 6],
     ['medium', 2],
+    ['slow', 1]
+]
+E_02 = [
+    ['slow', 1],
+    ['medium', 4],
+    ['fast', 5],
+    ['medium', 1],
+    ['slow', 1]
+]
+E_03 = [
+    ['slow', 1],
+    ['medium', 1],
+    ['fast', 5],
+    ['medium', 4],
+    ['slow', 1]
+]
+
+### Regular
+R_01 = [
+    ['slow', 2],
+    ['medium', 2],
+    ['fast', 4],
+    ['medium', 2],
+    ['slow', 2]
+]
+R_02 = [
+    ['slow', 1],
+    ['medium', 1],
+    ['fast', 4],
+    ['medium', 3],
+    ['slow', 3]
+]
+R_03 = [
+    ['slow', 3],
+    ['medium', 3],
+    ['fast', 4],
+    ['medium', 1],
+    ['slow', 1]
+]
+
+### Hard
+H_01 = [
+    ['slow', 3],
+    ['medium', 1],
+    ['fast', 1],
+    ['medium', 2],
+    ['fast', 2],
+    ['medium', 1],
+    ['slow', 2]
+]
+H_02 = [
+    ['slow', 2],
+    ['medium', 1],
+    ['fast', 2],
+    ['medium', 2],
+    ['fast', 1],
+    ['medium', 1],
+    ['slow', 3]
+]
+H_03 = [
+    ['slow', 1],
+    ['medium', 1],
+    ['fast', 2],
+    ['medium', 1],
+    ['slow', 3],
+    ['medium', 1],
+    ['fast', 1],
+    ['medium', 1],
     ['slow', 1]
 ]
 
@@ -37,7 +106,15 @@ P_01 = [
 PATTERNS = {
     'easy': {
         'speeds': { 'slow': 0.5, 'medium': 1, 'fast': 3 },
-        'patterns': [P_01]
+        'patterns': [E_01, E_02, E_03]
+    },
+    'regular': {
+        'speeds': { 'slow': 0.5, 'medium': 1, 'fast': 3 },
+        'patterns': [R_01, R_02, R_03]
+    },
+    'hard': {
+        'speeds': { 'slow': 0.5, 'medium': 1, 'fast': 3 },
+        'patterns': [H_01, H_02, H_03]
     }
 }
 
@@ -136,7 +213,7 @@ class Pattern:
         
         # Pattern to use
         self.pattern_difficulty = difficulty
-        self.pattern = 0
+        self.pattern = 2
         
         # Speed
         self.speed = 1
@@ -318,7 +395,7 @@ class App:
         self.depth = 300
         
         # Add fish to the game
-        self.fish = Fish('easy')
+        self.fish = Fish('hard')
         
         # Init fishing mini-game prop
         self.fishing = False
@@ -349,19 +426,16 @@ class App:
             if self.fishing.status == FishingStatus.SUCCESS:
                 self.message = "Well done, you caught the fish"
                 self.fishing = False
-                print(self.message)
             
             # Do something on failure
             elif self.fishing.status == FishingStatus.FAILURE:
                 self.message = "The fish is gone with your bait"
                 self.fishing = False
-                print(self.message)
             
             # Do something on abort fishing
             elif self.fishing.status == FishingStatus.ABORT:
                 self.message = "You let the fish go with your bait"
                 self.fishing = False
-                print(self.message)
             
 
 
