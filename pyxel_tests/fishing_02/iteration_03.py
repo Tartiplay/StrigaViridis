@@ -1,5 +1,6 @@
 import pyxel
 from enum import Enum
+from random import randrange
 
 
 
@@ -212,8 +213,8 @@ class Pattern:
         self.cursor = cursor
         
         # Pattern to use
-        self.pattern_difficulty = difficulty
-        self.pattern = 2
+        self.pattern_difficulty = difficulty        
+        self.pattern = self.pick_a_pattern(difficulty)
         
         # Speed
         self.speed = 1
@@ -228,6 +229,15 @@ class Pattern:
             return 11
         else:
             return 0
+    
+    
+    def pick_a_pattern(self, difficulty):
+        # Get number of patterns available
+        n_patterns = len(PATTERNS[difficulty]['patterns'])
+        
+        # Get random pattern between 0 and max number of patterns available
+        pattern = randrange(0, n_patterns)       
+        return pattern
 
 
     def update(self):
@@ -395,7 +405,7 @@ class App:
         self.depth = 300
         
         # Add fish to the game
-        self.fish = Fish('hard')
+        self.fish = Fish('regular')
         
         # Init fishing mini-game prop
         self.fishing = False
